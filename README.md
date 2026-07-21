@@ -234,6 +234,19 @@ txn.commit()  # or txn.abort()
 db.close()
 ```
 
+## Prior art
+
+The overall shape (paged storage under a buffer pool, a B+-tree
+secondary index, WAL-based recovery, MVCC snapshot isolation, a
+Volcano-style executor) follows the standard architecture taught in
+database internals courses like CMU's 15-445 and covered in *Database
+Internals* (Petrov) and the classic "Architecture of a Database System"
+survey -- the same shape every mainstream relational database (Postgres,
+MySQL/InnoDB, SQLite) uses under the hood. minirel is a from-scratch,
+readably-scoped implementation of that shape, not a port of any one of
+them; the "What's simplified" section above is exactly the list of
+places it deliberately diverges from a production system.
+
 ## Project layout
 
 ```

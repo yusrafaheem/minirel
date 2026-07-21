@@ -67,7 +67,7 @@ class Snapshot:
 class Transaction:
     txn_id: int
     snapshot: Snapshot
-    manager: "TransactionManager" = field(repr=False)
+    manager: TransactionManager = field(repr=False)
     state: TxnState = TxnState.ACTIVE
 
     def commit(self) -> None:

@@ -526,7 +526,9 @@ class BPlusTree:
                 self._write_leaf(l_data2, combined_keys[:split], combined_rids[:split], node_id)
                 self.buffer_pool.unpin_page(left_id, dirty=True)
                 node_data2 = self.buffer_pool.fetch_page(node_id)
-                self._write_leaf(node_data2, combined_keys[split:], combined_rids[split:], next_leaf)
+                self._write_leaf(
+                    node_data2, combined_keys[split:], combined_rids[split:], next_leaf
+                )
                 self.buffer_pool.unpin_page(node_id, dirty=True)
                 p_keys[idx - 1] = combined_keys[split]
 

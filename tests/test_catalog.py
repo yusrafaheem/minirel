@@ -78,6 +78,13 @@ class TestCatalog(unittest.TestCase):
         with self.assertRaises(ValueError):
             cat.create_index("users", "users_pkey", "id")
 
+    def test_create_index_on_float_column_raises(self):
+        schema = Schema(columns=(Column("id", ColumnType.INT), Column("balance", ColumnType.FLOAT)))
+        cat = Catalog(self.bpm, self._cat_tmp.name)
+        cat.create_table("accounts", schema)
+        with self.assertRaises(ValueError):
+            cat.create_index("accounts", "accounts_balance_idx", "balance")
+
 
 if __name__ == "__main__":
     unittest.main()

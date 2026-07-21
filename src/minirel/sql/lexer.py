@@ -26,7 +26,7 @@ _TOKEN_SPEC = [
     ("NUMBER", r"\d+\.\d+|\d+"),
     ("STRING", r"'(?:[^']|'')*'"),
     ("IDENT", r"[A-Za-z_][A-Za-z0-9_]*"),
-    ("OP", r"<=|>=|<>|!=|[=<>(),;.*]"),
+    ("OP", r"<=|>=|<>|!=|[=<>(),;.*-]"),
 ]
 _MASTER_RE = re.compile("|".join(f"(?P<{name}>{pattern})" for name, pattern in _TOKEN_SPEC))
 

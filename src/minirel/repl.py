@@ -33,7 +33,8 @@ def _format_rows(result: ExecuteResult) -> str:
     lines.append(header)
     lines.append("-+-".join("-" * w for w in col_widths))
     for row in result.rows:
-        lines.append(" | ".join(str(row.get(col, "")).ljust(w) for col, w in zip(columns, col_widths)))
+        cells = (str(row.get(col, "")).ljust(w) for col, w in zip(columns, col_widths))
+        lines.append(" | ".join(cells))
     lines.append(f"({len(result.rows)} row{'s' if len(result.rows) != 1 else ''})")
     return "\n".join(lines)
 

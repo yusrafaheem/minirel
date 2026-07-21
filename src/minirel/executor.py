@@ -62,7 +62,14 @@ class SeqScanOperator(Operator):
     what's visible to this transaction's MVCC snapshot.
     """
 
-    def __init__(self, heap: HeapFile, schema: Schema, alias: str, txn: Transaction, txn_mgr: TransactionManager):
+    def __init__(
+        self,
+        heap: HeapFile,
+        schema: Schema,
+        alias: str,
+        txn: Transaction,
+        txn_mgr: TransactionManager,
+    ):
         self.heap = heap
         self.schema = schema
         self.alias = alias
@@ -116,7 +123,7 @@ class IndexScanOperator(Operator):
         for _key, rid in self._iter:
             raw = self.heap.get(rid)
             if raw is None:
-                continue  # physically reclaimed already (shouldn't happen without vacuum, but be safe)
+                continue  # physically reclaimed already (shouldn't happen w/o vacuum, be safe)
             xmin, xmax = unpack_tuple_header(raw)
             if self.txn_mgr.is_visible(xmin, xmax, self.txn.snapshot):
                 return _row_from_tuple(self.alias, self.schema, rid, raw)
@@ -362,7 +369,8 @@ class HashAggregateOperator(Operator):
                 if isinstance(item.expr, FunctionCall):
                     out[name] = agg_states[i].result()
                 else:
-                    out[name] = group_values[key].get(item.expr.name if hasattr(item.expr, "name") else name)
+                    src_name = item.expr.name if hasattr(item.expr, "name") else name
+                    out[name] = group_values[key].get(src_name)
             self._result_rows.append(out)
 
         if not groups and not self.group_by:

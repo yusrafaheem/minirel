@@ -100,7 +100,9 @@ class Database:
 
         next_id = next_txn_id_after_recovery(self.wal)
         aborted = uncommitted_txn_ids_since_checkpoint(self.wal)
-        self.txn_mgr = TransactionManager(self.wal, next_txn_id=next_id, initial_aborted_xids=aborted)
+        self.txn_mgr = TransactionManager(
+            self.wal, next_txn_id=next_id, initial_aborted_xids=aborted
+        )
         self._recover()
 
     # -- lifecycle -----------------------------------------------------------
@@ -201,7 +203,9 @@ class Database:
 
     def _execute_create_index(self, stmt: CreateIndex) -> ExecuteResult:
         table = self.catalog.get_table(stmt.table)
-        meta = self.catalog.create_index(stmt.table, stmt.index_name, stmt.column, unique=stmt.unique)
+        meta = self.catalog.create_index(
+            stmt.table, stmt.index_name, stmt.column, unique=stmt.unique
+        )
         heap = HeapFile(self.buffer_pool, first_page_id=table.heap_first_page_id)
         tree = BPlusTree(
             self.buffer_pool, key_type=meta.key_type, root_page_id=meta.root_page_id, unique=False
@@ -244,7 +248,10 @@ class Database:
         if not idx_meta.unique:
             return
         tree = BPlusTree(
-            self.buffer_pool, key_type=idx_meta.key_type, root_page_id=idx_meta.root_page_id, unique=False
+            self.buffer_pool,
+            key_type=idx_meta.key_type,
+            root_page_id=idx_meta.root_page_id,
+            unique=False,
         )
         for rid in tree.search(key):
             if rid == exclude_rid:
@@ -277,7 +284,11 @@ class Database:
             tree.insert(key, rid)
             self.catalog.update_index_root(table.name, idx_name, tree.root_page_id)
             txn.log_operation(
-                "btree_insert", table=table.name, index=idx_name, key=key, rid=[rid.page_id, rid.slot_id]
+                "btree_insert",
+                table=table.name,
+                index=idx_name,
+                key=key,
+                rid=[rid.page_id, rid.slot_id],
             )
 
     def _execute_insert(self, stmt: Insert, txn: Transaction) -> ExecuteResult:

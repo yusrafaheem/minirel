@@ -109,7 +109,9 @@ def build_base_scan(
             root_page_id=idx_meta.root_page_id,
             unique=idx_meta.unique,
         )
-        scan = IndexScanOperator(tree, heap, meta.schema, alias, txn, txn_mgr, start=value, end=value)
+        scan = IndexScanOperator(
+            tree, heap, meta.schema, alias, txn, txn_mgr, start=value, end=value
+        )
         residual = _rebuild_and(conjuncts[:i] + conjuncts[i + 1 :])
         return scan, residual
 
@@ -143,7 +145,9 @@ def build_select_plan(
     txn_mgr: TransactionManager,
 ) -> Operator:
     left_alias = stmt.table_alias or stmt.table
-    plan = build_row_source_plan(stmt.table, left_alias, stmt.where, catalog, buffer_pool, txn, txn_mgr)
+    plan = build_row_source_plan(
+        stmt.table, left_alias, stmt.where, catalog, buffer_pool, txn, txn_mgr
+    )
 
     if stmt.join is not None:
         right_alias = stmt.join.alias or stmt.join.table

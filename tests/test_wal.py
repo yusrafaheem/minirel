@@ -74,6 +74,12 @@ class TestWriteAheadLog(unittest.TestCase):
         reader.close()
         self.assertEqual(len(records), 3)  # the torn 4th record is dropped, not raised
 
+    def test_empty_log_read_all_returns_empty_list(self):
+        wal = WriteAheadLog(self.path)
+        records = wal.read_all()
+        wal.close()
+        self.assertEqual(records, [])
+
     def test_uncommitted_transaction_has_no_commit_record(self):
         wal = WriteAheadLog(self.path)
         wal.log_begin(1)

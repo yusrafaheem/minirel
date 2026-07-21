@@ -46,11 +46,14 @@ class TestBasicRecovery(WalRecoveryTestBase):
         recovered = self._reopen()
         rows = recovered.execute("SELECT id, name FROM widgets").rows
         recovered.close()
-        self.assertEqual(sorted(rows, key=lambda r: r["id"]), [
-            {"id": 1, "name": "bolt"},
-            {"id": 2, "name": "nail"},
-            {"id": 3, "name": "screw"},
-        ])
+        self.assertEqual(
+            sorted(rows, key=lambda r: r["id"]),
+            [
+                {"id": 1, "name": "bolt"},
+                {"id": 2, "name": "nail"},
+                {"id": 3, "name": "screw"},
+            ],
+        )
 
     def test_uncommitted_insert_does_not_survive_a_crash(self):
         db = Database(self.path)

@@ -174,6 +174,23 @@ give you.
 inserts (isolating the WAL's per-commit `fsync` cost), full-table-scan
 throughput, and indexed point-query throughput.
 
+## Testing
+
+`tests/` is one `unittest` file per component (storage, B+-tree,
+catalog, WAL, MVCC, SQL front end, planner/executor), plus two kinds of
+integration test that don't fit a single-component file:
+
+- `test_wal_recovery.py` actually simulates a crash -- it closes the
+  underlying file handles without calling `Database.close()` (which
+  would flush everything and hide exactly the bugs this is supposed to
+  catch), then reopens a fresh `Database` over the same files and checks
+  what survived.
+- `test_btree.py` includes a randomized stress test that interleaves
+  thousands of inserts/deletes against a real B+-tree and checks every
+  intermediate state against a plain Python `dict`/sorted-list reference
+  model, which is what actually caught the duplicate-key split/merge
+  bugs listed above.
+
 ## Running it
 
 ```bash

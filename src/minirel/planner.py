@@ -47,6 +47,14 @@ from .transaction import Transaction, TransactionManager
 
 
 def _flatten_and(expr: Expr | None) -> list[Expr]:
+    """Split a chain of ANDs into its individual conjuncts, e.g.
+    `a AND b AND c` -> `[a, b, c]`. This is what lets the index-pushdown
+    check below look at each condition independently instead of pattern-
+    matching the whole WHERE tree; conjuncts inside an OR are correctly
+    left untouched (a top-level OR isn't a BinaryOp("AND", ...), so it's
+    returned as a single opaque conjunct, matching the module docstring's
+    "not inside an OR" caveat).
+    """
     if expr is None:
         return []
     if isinstance(expr, BinaryOp) and expr.op == "AND":

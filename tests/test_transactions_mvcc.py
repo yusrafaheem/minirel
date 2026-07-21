@@ -111,6 +111,12 @@ class TestTransactionStateTransitions(MvccTestBase):
         with self.assertRaises(ValueError):
             txn.commit()
 
+    def test_committing_an_aborted_transaction_raises(self):
+        txn = self.mgr.begin()
+        txn.abort()
+        with self.assertRaises(ValueError):
+            txn.commit()
+
 
 class TestWriteConflicts(MvccTestBase):
     def test_second_writer_conflicts_on_already_claimed_row(self):

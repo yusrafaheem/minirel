@@ -80,6 +80,10 @@ class TestParseInsert(unittest.TestCase):
         stmt = parse("INSERT INTO widgets (id, name) VALUES (1, 'widget')")
         self.assertEqual(stmt.columns, ("id", "name"))
 
+    def test_insert_false_literal(self):
+        stmt = parse("INSERT INTO widgets VALUES (1, FALSE)")
+        self.assertEqual([lit.value for lit in stmt.rows[0]], [1, False])
+
     def test_insert_multiple_rows(self):
         stmt = parse("INSERT INTO t VALUES (1, 'a'), (2, 'b'), (3, 'c')")
         self.assertEqual(len(stmt.rows), 3)

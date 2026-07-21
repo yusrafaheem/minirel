@@ -71,6 +71,13 @@ class TestCatalog(unittest.TestCase):
         reopened = Catalog(self.bpm, self._cat_tmp.name)
         self.assertEqual(reopened.get_table("users").heap_first_page_id, meta.heap_first_page_id)
 
+    def test_create_duplicate_index_name_raises(self):
+        cat = Catalog(self.bpm, self._cat_tmp.name)
+        cat.create_table("users", USERS_SCHEMA)
+        cat.create_index("users", "users_pkey", "id")
+        with self.assertRaises(ValueError):
+            cat.create_index("users", "users_pkey", "id")
+
 
 if __name__ == "__main__":
     unittest.main()

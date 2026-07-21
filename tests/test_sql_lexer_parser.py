@@ -29,6 +29,13 @@ class TestLexer(unittest.TestCase):
         tokens = tokenize("<= >= <> !=")
         self.assertEqual([t.value for t in tokens[:4]], ["<=", ">=", "<>", "!="])
 
+    def test_identifier_with_keyword_prefix_is_not_misclassified(self):
+        # "selection" must not be lexed as the keyword SELECT plus a
+        # dangling "ion" -- keyword matching has to respect word
+        # boundaries, not just prefix-match against the input.
+        tokens = tokenize("selection")
+        self.assertEqual([(t.kind, t.value) for t in tokens[:1]], [("IDENT", "selection")])
+
     def test_comments_are_skipped(self):
         tokens = tokenize("SELECT 1 -- this is a comment\nFROM t")
         self.assertEqual([t.kind for t in tokens], ["KEYWORD", "NUMBER", "KEYWORD", "IDENT", "EOF"])

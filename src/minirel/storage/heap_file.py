@@ -35,7 +35,7 @@ import struct
 from collections.abc import Iterator
 
 from .buffer_pool import BufferPoolManager
-from .page import INVALID_PAGE_ID, PAGE_SIZE, PageType, RID
+from .page import INVALID_PAGE_ID, PAGE_SIZE, RID, PageType
 
 _HEADER = struct.Struct("<BHHI")  # type, num_slots, free_space_ptr, next_page_id
 _HEADER_SIZE = _HEADER.size  # 9

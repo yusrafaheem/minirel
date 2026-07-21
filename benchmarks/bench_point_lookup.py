@@ -27,7 +27,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from minirel.database import Database
 from minirel.index.btree import BPlusTree
 
-DEFAULT_SIZES = [1_000, 5_000, 10_000]  # pass --rows to try larger tables; growth is what matters here
+DEFAULT_SIZES = [1_000, 5_000, 10_000]  # pass --rows for larger tables; growth is what matters
 TRIALS = 200
 
 
@@ -62,7 +62,8 @@ def time_lookup(db: Database, sql_template: str, keys: list[int]) -> float:
 
 def run(sizes: list[int]) -> None:
     rng = random.Random(42)
-    print(f"{'rows':>8} | {'tree height':>11} | {'index scan (us)':>16} | {'seq scan (us)':>14} | {'speedup':>8}")
+    header = f"{'rows':>8} | {'tree height':>11} | {'index scan (us)':>16} | {'seq scan (us)':>14}"
+    print(f"{header} | {'speedup':>8}")
     print("-" * 70)
 
     for n in sizes:
@@ -83,9 +84,8 @@ def run(sizes: list[int]) -> None:
         db.close()
 
         speedup = seq_secs / index_secs if index_secs > 0 else float("inf")
-        print(
-            f"{n:>8} | {height:>11} | {index_secs * 1e6:>16.1f} | {seq_secs * 1e6:>14.1f} | {speedup:>7.1f}x"
-        )
+        row = f"{n:>8} | {height:>11} | {index_secs * 1e6:>16.1f} | {seq_secs * 1e6:>14.1f}"
+        print(f"{row} | {speedup:>7.1f}x")
 
 
 if __name__ == "__main__":

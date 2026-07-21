@@ -230,15 +230,50 @@ class Database:
             rows.append([value_map[name] for name in table.schema.names])
         return rows
 
-    def _insert_into_indexes(self, table, txn: Transaction, value_map: dict, rid: RID) -> None:
+    def _check_unique_constraint(
+        self, table, idx_meta, key, txn: Transaction, heap: HeapFile, exclude_rid: RID | None
+    ) -> None:
+        """Enforce uniqueness at the row-visibility level rather than inside
+        BPlusTree itself: because UPDATE leaves the old (now-dead) index
+        entry in place (see module docstring -- no vacuum), a plain
+        "does this key already exist anywhere in the tree" check would
+        reject a row being updated back through the *same* key it already
+        had. Instead, walk every entry for `key` and only object if some
+        *other*, currently-visible row already holds it.
+        """
+        if not idx_meta.unique:
+            return
+        tree = BPlusTree(
+            self.buffer_pool, key_type=idx_meta.key_type, root_page_id=idx_meta.root_page_id, unique=False
+        )
+        for rid in tree.search(key):
+            if rid == exclude_rid:
+                continue
+            raw = heap.get(rid)
+            if raw is None:
+                continue
+            xmin, xmax = unpack_tuple_header(raw)
+            if self.txn_mgr.is_visible(xmin, xmax, txn.snapshot):
+                raise DuplicateKeyError(f"duplicate key in unique index {idx_meta.name!r}: {key!r}")
+
+    def _insert_into_indexes(
+        self,
+        table,
+        txn: Transaction,
+        value_map: dict,
+        rid: RID,
+        heap: HeapFile,
+        exclude_rid: RID | None = None,
+    ) -> None:
         for idx_name, idx_meta in table.indexes.items():
+            key = value_map[idx_meta.column]
+            self._check_unique_constraint(table, idx_meta, key, txn, heap, exclude_rid)
             tree = BPlusTree(
                 self.buffer_pool,
                 key_type=idx_meta.key_type,
                 root_page_id=idx_meta.root_page_id,
-                unique=idx_meta.unique,
+                unique=False,  # already enforced above, with MVCC visibility taken into account
             )
-            key = value_map[idx_meta.column]
             tree.insert(key, rid)
             self.catalog.update_index_root(table.name, idx_name, tree.root_page_id)
             txn.log_operation(
@@ -262,7 +297,7 @@ class Database:
                 rid=[rid.page_id, rid.slot_id],
             )
             value_map = dict(zip(table.schema.names, values))
-            self._insert_into_indexes(table, txn, value_map, rid)
+            self._insert_into_indexes(table, txn, value_map, rid, heap)
             count += 1
         return ExecuteResult(row_count=count, message=f"INSERT {count}")
 
@@ -308,7 +343,7 @@ class Database:
                 tuple=base64.b64encode(new_tuple).decode("ascii"),
                 rid=[new_rid.page_id, new_rid.slot_id],
             )
-            self._insert_into_indexes(table, txn, value_map, new_rid)
+            self._insert_into_indexes(table, txn, value_map, new_rid, heap, exclude_rid=rid)
             count += 1
         return ExecuteResult(row_count=count, message=f"UPDATE {count}")
 

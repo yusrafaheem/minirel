@@ -303,6 +303,17 @@ class Parser:
     def _parse_primary(self) -> Expr:
         tok = self._peek()
 
+        if self._check("OP", "-"):
+            # Unary minus on a numeric literal (e.g. `WHERE tag = -1`).
+            # minirel has no general arithmetic expressions, so this is
+            # intentionally narrow: it only folds the sign into a literal,
+            # not a full unary-negation AST node over arbitrary expressions.
+            self._advance()
+            operand = self._parse_primary()
+            if isinstance(operand, Literal) and isinstance(operand.value, (int, float)):
+                return Literal(-operand.value)
+            raise ParseError(f"unary '-' is only supported on numeric literals, at position {tok.pos}")
+
         if tok.kind == "NUMBER":
             self._advance()
             return Literal(float(tok.value) if "." in tok.value else int(tok.value))

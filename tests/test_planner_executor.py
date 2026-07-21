@@ -198,6 +198,11 @@ class TestSortAndLimit(PlannerExecutorTestBase):
         rows = self.run_select("SELECT name FROM widgets ORDER BY price LIMIT 0")
         self.assertEqual(rows, [])
 
+    def test_order_by_multiple_columns(self):
+        # category ASC (gadgets < hardware) breaking ties by price ASC.
+        rows = self.run_select("SELECT name FROM widgets ORDER BY category, price")
+        self.assertEqual([r["name"] for r in rows], ["widget", "gizmo", "nail", "bolt", "sprocket"])
+
     def test_order_by_desc_with_limit(self):
         rows = self.run_select("SELECT name FROM widgets ORDER BY price DESC LIMIT 2")
         self.assertEqual([r["name"] for r in rows], ["gizmo", "widget"])

@@ -161,6 +161,22 @@ class TestUpdateDeleteRecovery(WalRecoveryTestBase):
         self.assertEqual(rows, [{"id": 2}])
 
 
+class TestCombinedUpdateDeleteRecovery(WalRecoveryTestBase):
+    def test_row_updated_then_deleted_before_crash_stays_gone_after_recovery(self):
+        db = Database(self.path)
+        db.execute("CREATE TABLE widgets (id INT, price FLOAT)")
+        db.execute("INSERT INTO widgets VALUES (1, 1.0), (2, 2.0)")
+        db.checkpoint()
+        db.execute("UPDATE widgets SET price = 5.0 WHERE id = 1")
+        db.execute("DELETE FROM widgets WHERE id = 1")
+        self._crash(db)
+
+        recovered = self._reopen()
+        rows = recovered.execute("SELECT id FROM widgets").rows
+        recovered.close()
+        self.assertEqual(rows, [{"id": 2}])
+
+
 class TestCheckpoint(WalRecoveryTestBase):
     def test_checkpoint_refuses_with_active_transaction(self):
         db = Database(self.path)

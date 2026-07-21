@@ -37,6 +37,10 @@ class TestLexer(unittest.TestCase):
         with self.assertRaises(LexError):
             tokenize("SELECT $ FROM t")
 
+    def test_unclosed_string_raises(self):
+        with self.assertRaises(LexError):
+            tokenize("SELECT 'abc FROM t")
+
 
 class TestParseDDL(unittest.TestCase):
     def test_create_table(self):

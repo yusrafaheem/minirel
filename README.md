@@ -107,3 +107,45 @@ version was a better use of time than building the
 implemented (B+-tree splits/merges/duplicate-key handling, MVCC
 snapshot visibility, WAL crash recovery) are implemented and tested for
 real, not stubbed.
+
+## Bugs the tests actually caught
+
+Kept here because finding these is the point of the stress tests, not
+an embarrassment to hide:
+
+- **B+-tree leaf splits could separate a run of duplicate keys** across
+  the two resulting leaves. Since search routes a key equal to a
+  separator to the *right* child, half the duplicates silently became
+  unreachable. Fixed by nudging the split point to a key boundary
+  (`_split_point_avoiding_duplicates` in `index/btree.py`).
+- **The same duplicate-run problem showed up again in borrow/merge on
+  delete**, plus a separate off-by-one in the min/max fill-factor math
+  (`ceil` instead of `floor`, which could make a merge of two
+  "minimally full" leaves overflow the destination page by one entry).
+  Both found by a 4,000-operation randomized insert/delete stress test
+  checked against a plain Python `dict`/sorted-list reference model
+  (`tests/test_btree.py`).
+- **A rare case where neither borrowing nor a plain merge could
+  rebalance a delete-underflowed leaf** (the "spare" sibling's excess
+  entries were all one duplicate run, blocking a partial borrow, while
+  a full merge would overflow the page by exactly one entry). Fixed by
+  falling back to *redistributing* across both pages at a fresh
+  duplicate-safe split point instead of collapsing to one, when a
+  same-page merge would overflow.
+- **`CREATE TABLE`/`CREATE INDEX` allocated a page in the buffer pool
+  but never flushed it**, so a crash before the next eviction or
+  checkpoint left the catalog pointing at a page that was still all
+  zeros on disk -- which a page-chain walk misread as a
+  self-referencing "next page" pointer and looped forever. Caught by
+  `tests/test_wal_recovery.py`'s crash-mid-transaction test actually
+  hanging instead of failing. Fixed by making DDL flush its freshly
+  allocated page immediately (plus a cycle-detection guard in
+  `heap_file.py` as a second line of defense).
+- **`UPDATE` on a uniquely-indexed column spuriously conflicted with
+  its own old, now-dead index entry**, because the B+-tree's built-in
+  uniqueness check isn't MVCC-aware. Fixed by moving uniqueness
+  enforcement to the database layer, where visibility can actually be
+  checked (`Database._check_unique_constraint`).
+- **The SQL lexer had no unary minus** -- `WHERE tag = -1` failed to
+  tokenize at all. Found while writing the benchmark scripts, not the
+  unit tests, which is its own small lesson about coverage.

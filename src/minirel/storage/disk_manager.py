@@ -46,6 +46,14 @@ class DiskManager:
             return page_id
 
     def read_page(self, page_id: int) -> bytearray:
+        """Read `page_id`'s full PAGE_SIZE bytes. The short-read pad below is
+        defensive rather than expected in normal operation -- every page
+        that exists was written full-size by `allocate_page` or a later
+        `write_page` -- but it means a page whose tail somehow never made
+        it to disk still comes back a well-formed all-zero-tail buffer
+        instead of raising, which is one fewer way for storage-layer bugs
+        to surface as a confusing exception three layers up.
+        """
         with self._lock:
             if page_id >= self.num_pages:
                 raise ValueError(f"page {page_id} does not exist (num_pages={self.num_pages})")

@@ -38,7 +38,7 @@ from bisect import bisect_left, bisect_right
 from collections.abc import Iterator
 
 from ..storage.buffer_pool import BufferPoolManager
-from ..storage.page import INVALID_PAGE_ID, PAGE_SIZE, PageType, RID
+from ..storage.page import INVALID_PAGE_ID, PAGE_SIZE, RID, PageType
 from ..types import ColumnType
 
 _LEAF_HEADER = 7  # type(1) + num_keys(2) + next_leaf(4)

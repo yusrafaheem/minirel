@@ -40,6 +40,10 @@ class TestRepl(unittest.TestCase):
         output = self._run("CREATE TABLE t (\nid INT\n);\n.exit\n")
         self.assertIn("CREATE TABLE t", output)
 
+    def test_dot_tables_on_a_fresh_database_reports_no_tables(self):
+        output = self._run(".tables\n.exit\n")
+        self.assertNotIn("Traceback", output)
+
     def test_dot_tables_lists_created_tables(self):
         script = "CREATE TABLE alpha (id INT);\nCREATE TABLE beta (id INT);\n.tables\n.exit\n"
         output = self._run(script)

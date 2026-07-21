@@ -61,6 +61,12 @@ class TestBasicOps(BTreeTestBase):
         tree = BPlusTree(self.bpm)
         self.assertFalse(tree.delete(99, RID(1, 0)))
 
+    def test_delete_existing_key_with_wrong_rid_returns_false_and_leaves_entry(self):
+        tree = BPlusTree(self.bpm)
+        tree.insert(5, RID(1, 0))
+        self.assertFalse(tree.delete(5, RID(2, 0)))  # right key, RID that was never inserted
+        self.assertEqual(tree.search(5), [RID(1, 0)])
+
     def test_range_scan_ascending_order(self):
         tree = BPlusTree(self.bpm)
         for k in [7, 2, 9, 4, 1, 5]:

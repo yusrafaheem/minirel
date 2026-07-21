@@ -160,6 +160,12 @@ class TestParseSelect(unittest.TestCase):
         self.assertTrue(stmt.order_by[0].descending)
         self.assertEqual(stmt.limit, 5)
 
+    def test_order_by_multiple_columns(self):
+        stmt = parse("SELECT * FROM widgets ORDER BY category, price DESC")
+        self.assertEqual(len(stmt.order_by), 2)
+        self.assertFalse(stmt.order_by[0].descending)
+        self.assertTrue(stmt.order_by[1].descending)
+
     def test_order_by_default_ascending(self):
         stmt = parse("SELECT * FROM widgets ORDER BY price")
         self.assertFalse(stmt.order_by[0].descending)

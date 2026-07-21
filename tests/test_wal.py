@@ -95,6 +95,17 @@ class TestWriteAheadLog(unittest.TestCase):
         wal.close()
         self.assertEqual([r.txn_id for r in records], [3, 3])
 
+    def test_abort_record_round_trips(self):
+        wal = WriteAheadLog(self.path)
+        wal.log_begin(1)
+        wal.log_abort(1)
+        wal.close()
+
+        reader = WriteAheadLog(self.path)
+        records = reader.read_all()
+        reader.close()
+        self.assertEqual([r.type for r in records], [RecordType.BEGIN, RecordType.ABORT])
+
     def test_uncommitted_transaction_has_no_commit_record(self):
         wal = WriteAheadLog(self.path)
         wal.log_begin(1)

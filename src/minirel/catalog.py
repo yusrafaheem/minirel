@@ -85,6 +85,15 @@ class Catalog:
     def create_index(
         self, table_name: str, index_name: str, column: str, unique: bool = False
     ) -> IndexMeta:
+        """Build a fresh, empty B+-tree over `column` and register it in the
+        catalog. This only creates the index *structure* and metadata --
+        it deliberately doesn't know about the table's existing rows, so
+        it's always empty right after this returns. Backfilling entries
+        for a table's current rows (needed for `CREATE INDEX` on a
+        non-empty table to actually be useful) is the caller's job; see
+        `Database._execute_create_index`, which scans the heap and
+        inserts into the tree this method just created.
+        """
         table = self.get_table(table_name)
         if index_name in table.indexes:
             raise ValueError(f"index already exists: {index_name}")

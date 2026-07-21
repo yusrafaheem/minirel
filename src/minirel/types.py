@@ -122,14 +122,28 @@ def decode_row(data: bytes, schema: Schema) -> list:
 
 
 def pack_tuple(xmin: int, xmax: int, row_payload: bytes) -> bytes:
+    """Prefix an already-encoded row (from `encode_row`) with its MVCC
+    header, producing the exact bytes `HeapFile.insert` stores. `xmax`
+    is `INFINITY_TXN` for a freshly inserted row that hasn't been
+    deleted/updated by anyone yet.
+    """
     return _MVCC_HEADER.pack(xmin, xmax) + row_payload
 
 
 def unpack_tuple_header(data: bytes) -> tuple[int, int]:
+    """Read just the (xmin, xmax) pair off the front of a stored tuple --
+    the visibility check (`TransactionManager.is_visible`) only needs
+    these two ints, not the decoded row payload, so callers that are just
+    filtering by visibility can skip `decode_row` entirely until a row
+    actually passes.
+    """
     return _MVCC_HEADER.unpack_from(data, 0)
 
 
 def tuple_payload(data: bytes) -> bytes:
+    """Strip the MVCC header off a stored tuple, leaving the raw bytes
+    `decode_row` expects.
+    """
     return data[_MVCC_HEADER.size :]
 
 

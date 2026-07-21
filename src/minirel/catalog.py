@@ -68,6 +68,15 @@ class Catalog:
         if name in self.tables:
             raise TableAlreadyExistsError(name)
         heap = HeapFile(self.buffer_pool)
+        # DDL is immediately durable (that's the whole point of persisting
+        # the catalog outside the WAL/transaction story -- see this
+        # module's docstring), so the heap page the catalog is about to
+        # point to must actually exist on disk right now too, not just in
+        # the buffer pool. Without this, a crash before the next eviction
+        # or checkpoint would leave the catalog pointing at a page that's
+        # still all zeros on disk -- which a page-chain walk misreads as a
+        # self-referencing "next page" pointer and loops forever on.
+        self.buffer_pool.flush_page(heap.first_page_id)
         meta = TableMeta(name=name, schema=schema, heap_first_page_id=heap.first_page_id)
         self.tables[name] = meta
         self._save()
@@ -83,6 +92,7 @@ class Catalog:
         if col.type not in (ColumnType.INT, ColumnType.TEXT):
             raise ValueError(f"cannot index a {col.type} column: {column}")
         tree = BPlusTree(self.buffer_pool, key_type=col.type, unique=unique)
+        self.buffer_pool.flush_page(tree.root_page_id)  # see create_table's comment on why
         meta = IndexMeta(
             name=index_name,
             column=column,
@@ -106,9 +116,21 @@ class Catalog:
     def update_index_root(self, table_name: str, index_name: str, new_root_page_id: int) -> None:
         """A B+-tree's root page id can change (splits growing the tree,
         deletes shrinking it) -- the catalog's copy needs to stay in sync so
-        the index can be found again after a reopen.
+        the index can be found again after a reopen. This is called after
+        essentially every indexed row insert/update, but a root split is
+        rare (root fanout is in the hundreds, so most tables never split
+        their root at all) -- so this only pays for a full fsynced JSON
+        rewrite of the catalog on the actual rare occasions the value
+        changes, not on every call. When it doesn't change here, the
+        in-memory root is already correct and the on-disk copy stays valid
+        because WAL replay recomputes it from the `btree_insert` log
+        (which is what durability for this value actually rests on, the
+        same as any other DML effect -- see database.py's docstring).
         """
-        self.tables[table_name].indexes[index_name].root_page_id = new_root_page_id
+        idx = self.tables[table_name].indexes[index_name]
+        if idx.root_page_id == new_root_page_id:
+            return
+        idx.root_page_id = new_root_page_id
         self._save()
 
     # -- persistence -------------------------------------------------------

@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  lint-and-format:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install package with dev tools
+        run: pip install -e ".[dev]"
+      - name: Lint with ruff
+        run: ruff check src tests benchmarks
+      - name: Check formatting with black
+        run: black --check src tests benchmarks
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install package
+        run: pip install -e .
+      - name: Run unit + end-to-end tests
+        run: python -m unittest discover -s tests -v
+
+  benchmarks-smoke:
+    # Not a performance gate (CI runners have wildly variable, shared CPU,
+    # so asserting on absolute timings here would be flaky by construction)
+    # -- this just proves the benchmark scripts themselves run end-to-end
+    # without error on every PR, which is what actually tends to bit-rot
+    # first once a project has "real" tests people pay attention to and
+    # benchmark scripts nobody runs by hand anymore.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install package
+        run: pip install -e .
+      - name: Point-lookup benchmark (small sizes, just checking it runs)
+        run: python benchmarks/bench_point_lookup.py --rows 200 500
+      - name: Throughput benchmark (small size, just checking it runs)
+        run: python benchmarks/bench_throughput.py --rows 300
+
+  cli-smoke:
+    # Exercises the installed `minirel` console-script entry point and the
+    # REPL's non-interactive path end to end, the way a user actually runs
+    # this project -- distinct from the unit tests, which call Database and
+    # repl() directly in-process.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install package
+        run: pip install -e .
+      - name: Run a scripted session through the installed CLI
+        run: |
+          printf "CREATE TABLE t (id INT, name TEXT);\nINSERT INTO t VALUES (1, 'hello');\nSELECT * FROM t;\n.exit\n" \
+            | minirel /tmp/smoke.db

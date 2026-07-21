@@ -50,6 +50,12 @@ class Operator:
 
 
 def _row_from_tuple(alias: str, schema: Schema, rid: RID, raw: bytes) -> dict:
+    """Decode one stored tuple into a row dict, keyed both ways: as a bare
+    column name (`"id"`) and as an alias-qualified name (`"widgets.id"`).
+    The bare key is what most single-table queries look up; the qualified
+    key is what JOINs need once two tables can share a column name -- see
+    expr.py's docstring for how a ColumnRef picks which one to use.
+    """
     values = decode_row(tuple_payload(raw), schema)
     row = {f"{alias}.{col.name}": val for col, val in zip(schema.columns, values)}
     row.update({col.name: val for col, val in zip(schema.columns, values)})

@@ -184,6 +184,13 @@ class TestAggregation(PlannerExecutorTestBase):
         self.assertAlmostEqual(by_category["hardware"]["sum"], 0.50 + 0.10 + 3.25)
         self.assertEqual(by_category["gadgets"]["count"], 2)
 
+    def test_group_by_applies_where_filter_before_grouping(self):
+        rows = self.run_select(
+            "SELECT category, COUNT(*) FROM widgets WHERE price > 1.0 GROUP BY category"
+        )
+        by_category = {r["category"]: r["count"] for r in rows}
+        self.assertEqual(by_category, {"hardware": 1, "gadgets": 2})
+
     def test_count_on_empty_result_is_zero_not_no_rows(self):
         rows = self.run_select("SELECT COUNT(*) FROM widgets WHERE id = 999")
         self.assertEqual(rows, [{"count": 0}])

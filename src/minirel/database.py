@@ -195,9 +195,7 @@ class Database:
     # -- DDL -----------------------------------------------------------------
 
     def _execute_create_table(self, stmt: CreateTable) -> ExecuteResult:
-        schema = Schema(
-            columns=tuple(Column(c.name, ColumnType(c.type)) for c in stmt.columns)
-        )
+        schema = Schema(columns=tuple(Column(c.name, ColumnType(c.type)) for c in stmt.columns))
         self.catalog.create_table(stmt.table, schema)
         return ExecuteResult(message=f"CREATE TABLE {stmt.table}")
 

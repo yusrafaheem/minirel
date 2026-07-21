@@ -18,6 +18,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install package with dev tools
         run: pip install -e ".[dev]"
+      - name: DEBUG show ruff fix diff
+        run: ruff check --diff src tests benchmarks || true
       - name: Lint with ruff
         run: ruff check src tests benchmarks
       - name: Check formatting with black

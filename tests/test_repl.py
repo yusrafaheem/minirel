@@ -51,9 +51,7 @@ class TestRepl(unittest.TestCase):
         self.assertIn("error:", output)
 
     def test_empty_result_set_message(self):
-        output = self._run(
-            "CREATE TABLE t (id INT);\nSELECT * FROM t WHERE id = 1;\n.exit\n"
-        )
+        output = self._run("CREATE TABLE t (id INT);\nSELECT * FROM t WHERE id = 1;\n.exit\n")
         self.assertIn("(0 rows)", output)
 
 

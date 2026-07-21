@@ -312,7 +312,7 @@ class Parser:
             operand = self._parse_primary()
             if isinstance(operand, Literal) and isinstance(operand.value, (int, float)):
                 return Literal(-operand.value)
-            raise ParseError(f"unary '-' is only supported on numeric literals, at position {tok.pos}")
+            raise ParseError(f"unary '-' only supports numeric literals, at position {tok.pos}")
 
         if tok.kind == "NUMBER":
             self._advance()

@@ -194,6 +194,10 @@ class TestSortAndLimit(PlannerExecutorTestBase):
         rows = self.run_select("SELECT name FROM widgets ORDER BY price")
         self.assertEqual([r["name"] for r in rows], ["nail", "bolt", "sprocket", "widget", "gizmo"])
 
+    def test_limit_zero_returns_no_rows(self):
+        rows = self.run_select("SELECT name FROM widgets ORDER BY price LIMIT 0")
+        self.assertEqual(rows, [])
+
     def test_order_by_desc_with_limit(self):
         rows = self.run_select("SELECT name FROM widgets ORDER BY price DESC LIMIT 2")
         self.assertEqual([r["name"] for r in rows], ["gizmo", "widget"])

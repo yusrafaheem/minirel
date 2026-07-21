@@ -91,6 +91,16 @@ class TestCatalog(unittest.TestCase):
         with self.assertRaises(ValueError):
             cat.create_index("accounts", "accounts_balance_idx", "balance")
 
+    def test_update_index_root_persists_across_reopen(self):
+        cat = Catalog(self.bpm, self._cat_tmp.name)
+        cat.create_table("users", USERS_SCHEMA)
+        cat.create_index("users", "users_pkey", "id", unique=True)
+        cat.update_index_root("users", "users_pkey", 42)
+        self.bpm.flush_all()
+
+        reopened = Catalog(self.bpm, self._cat_tmp.name)
+        self.assertEqual(reopened.get_table("users").indexes["users_pkey"].root_page_id, 42)
+
 
 if __name__ == "__main__":
     unittest.main()

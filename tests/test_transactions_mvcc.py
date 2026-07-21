@@ -104,6 +104,14 @@ class TestSnapshotIsolationVisibility(MvccTestBase):
         )
 
 
+class TestTransactionStateTransitions(MvccTestBase):
+    def test_committing_twice_raises(self):
+        txn = self.mgr.begin()
+        txn.commit()
+        with self.assertRaises(ValueError):
+            txn.commit()
+
+
 class TestWriteConflicts(MvccTestBase):
     def test_second_writer_conflicts_on_already_claimed_row(self):
         a = self.mgr.begin()

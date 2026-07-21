@@ -80,6 +80,21 @@ class TestWriteAheadLog(unittest.TestCase):
         wal.close()
         self.assertEqual(records, [])
 
+    def test_only_records_after_most_recent_of_two_checkpoints_are_replayed(self):
+        wal = WriteAheadLog(self.path)
+        wal.log_begin(1)
+        wal.log_commit(1)
+        wal.log_checkpoint()
+        wal.log_begin(2)
+        wal.log_commit(2)
+        wal.log_checkpoint()
+        wal.log_begin(3)
+        wal.log_commit(3)
+
+        records = wal.read_since_last_checkpoint()
+        wal.close()
+        self.assertEqual([r.txn_id for r in records], [3, 3])
+
     def test_uncommitted_transaction_has_no_commit_record(self):
         wal = WriteAheadLog(self.path)
         wal.log_begin(1)

@@ -84,12 +84,25 @@ class HeapFile:
 
     def _find_last_page(self) -> int:
         page_id = self.first_page_id
+        seen = {page_id}
         while True:
             data = self.buffer_pool.fetch_page(page_id)
             _, _, _, next_page = _read_header(data)
             self.buffer_pool.unpin_page(page_id)
             if next_page == INVALID_PAGE_ID:
                 return page_id
+            if next_page in seen:
+                # A cycle means this page was never properly initialized as
+                # a heap page (e.g. still all-zero bytes on disk, which
+                # decodes to page_type=FREE and next_page=0 -- see
+                # Catalog.create_table's comment on why DDL flushes its
+                # freshly allocated page immediately to prevent exactly
+                # this). Fail loudly instead of looping forever.
+                raise ValueError(
+                    f"heap page chain has a cycle at page {next_page} "
+                    "(the data file may be corrupt, or a page was never initialized)"
+                )
+            seen.add(next_page)
             page_id = next_page
 
     def insert(self, row_bytes: bytes) -> RID:

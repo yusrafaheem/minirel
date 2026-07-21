@@ -50,6 +50,12 @@ class TestRepl(unittest.TestCase):
         output = self._run("SELECT * FROM nonexistent;\n.exit\n")
         self.assertIn("error:", output)
 
+    def test_delete_reports_row_count(self):
+        script = "CREATE TABLE t (id INT);\nINSERT INTO t VALUES (1), (2);\n"
+        script += "DELETE FROM t WHERE id = 1;\n.exit\n"
+        output = self._run(script)
+        self.assertIn("DELETE 1", output)
+
     def test_empty_result_set_message(self):
         output = self._run("CREATE TABLE t (id INT);\nSELECT * FROM t WHERE id = 1;\n.exit\n")
         self.assertIn("(0 rows)", output)

@@ -150,6 +150,13 @@ class Database:
         self.wal.log_checkpoint()
 
     def close(self) -> None:
+        """Orderly shutdown: flush every dirty page, then close the
+        underlying file handles. Note this does *not* write a CHECKPOINT
+        record (unlike `checkpoint()`), so a subsequent reopen still
+        replays the WAL since the last real checkpoint -- an orderly
+        close is durable because everything reached disk, not because it
+        shortened recovery.
+        """
         self.buffer_pool.flush_all()
         self.disk_manager.close()
         self.wal.close()

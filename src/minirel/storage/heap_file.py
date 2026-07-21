@@ -14,7 +14,7 @@ Slotted page layout (PAGE_SIZE bytes total)::
     |                                                               |
     |                      ... free space ...                      |
     |                                                               |
-    | ... tuple data ... | tuple[1] | tuple[0]                     |  <- tuple bytes, grow up (from the end)
+    | ... tuple data ... | tuple[1] | tuple[0]                     |  <- tuple bytes, grow up
     +-------------------------------------------------------------+
 
 The slot directory and the tuple data grow toward each other from
@@ -48,7 +48,9 @@ def _read_header(data: bytearray) -> tuple[int, int, int, int]:
     return _HEADER.unpack_from(data, 0)
 
 
-def _write_header(data: bytearray, page_type: int, num_slots: int, free_ptr: int, next_page: int) -> None:
+def _write_header(
+    data: bytearray, page_type: int, num_slots: int, free_ptr: int, next_page: int
+) -> None:
     _HEADER.pack_into(data, 0, page_type, num_slots, free_ptr, next_page)
 
 

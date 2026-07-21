@@ -26,6 +26,15 @@ class AmbiguousColumnError(Exception):
 
 
 def resolve_column(row: dict, col: ColumnRef):
+    """Look up one column reference's value in a row dict. An explicitly
+    table-qualified reference (`orders.id`) only ever checks the exact
+    qualified key. An unqualified reference (`id`) first tries the bare
+    key (present on single-table scans, and on join output for columns
+    that only exist on one side); failing that, it falls back to scanning
+    for exactly one `*.id` qualified key so unambiguous unqualified names
+    still work after a join -- two or more matches means the reference
+    really is ambiguous and must be qualified by the caller.
+    """
     if col.table is not None:
         key = f"{col.table}.{col.name}"
         if key in row:

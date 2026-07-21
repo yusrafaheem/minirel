@@ -117,6 +117,13 @@ class TestTransactionStateTransitions(MvccTestBase):
         with self.assertRaises(ValueError):
             txn.commit()
 
+    def test_has_active_transactions_reflects_current_state(self):
+        self.assertFalse(self.mgr.has_active_transactions)
+        txn = self.mgr.begin()
+        self.assertTrue(self.mgr.has_active_transactions)
+        txn.commit()
+        self.assertFalse(self.mgr.has_active_transactions)
+
 
 class TestWriteConflicts(MvccTestBase):
     def test_second_writer_conflicts_on_already_claimed_row(self):

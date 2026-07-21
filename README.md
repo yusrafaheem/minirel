@@ -191,6 +191,20 @@ integration test that don't fit a single-component file:
   model, which is what actually caught the duplicate-key split/merge
   bugs listed above.
 
+## Continuous integration
+
+Every push to `main` and every pull request runs, on Python 3.10/3.11/3.12:
+
+- `ruff check` and `black --check` (lint + formatting)
+- the full `unittest` suite
+- a smoke run of both benchmark scripts at small `--rows`, so a bench
+  script bit-rotting silently is caught even though nobody runs
+  benchmarks by hand on every change
+- a scripted end-to-end session through the installed `minirel` CLI
+  entry point, distinct from the in-process unit tests
+
+See `.github/workflows/ci.yml`.
+
 ## Running it
 
 ```bash

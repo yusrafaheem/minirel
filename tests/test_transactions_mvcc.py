@@ -25,7 +25,8 @@ class MvccTestBase(unittest.TestCase):
 class TestSnapshotIsolationVisibility(MvccTestBase):
     def test_own_uncommitted_insert_is_visible_to_self(self):
         txn = self.mgr.begin()
-        self.assertTrue(self.mgr.is_visible(xmin=txn.txn_id, xmax=INFINITY_TXN, snapshot=txn.snapshot))
+        visible = self.mgr.is_visible(xmin=txn.txn_id, xmax=INFINITY_TXN, snapshot=txn.snapshot)
+        self.assertTrue(visible)
 
     def test_uncommitted_insert_is_invisible_to_other_transaction(self):
         writer = self.mgr.begin()

@@ -41,7 +41,8 @@ class TestRepl(unittest.TestCase):
         self.assertIn("CREATE TABLE t", output)
 
     def test_dot_tables_lists_created_tables(self):
-        output = self._run("CREATE TABLE alpha (id INT);\nCREATE TABLE beta (id INT);\n.tables\n.exit\n")
+        script = "CREATE TABLE alpha (id INT);\nCREATE TABLE beta (id INT);\n.tables\n.exit\n"
+        output = self._run(script)
         self.assertIn("alpha", output)
         self.assertIn("beta", output)
 

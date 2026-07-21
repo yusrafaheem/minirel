@@ -17,7 +17,8 @@ class TestLexer(unittest.TestCase):
 
     def test_tokenizes_numbers_int_and_float(self):
         tokens = tokenize("42 3.14")
-        self.assertEqual([(t.kind, t.value) for t in tokens[:2]], [("NUMBER", "42"), ("NUMBER", "3.14")])
+        kinds_values = [(t.kind, t.value) for t in tokens[:2]]
+        self.assertEqual(kinds_values, [("NUMBER", "42"), ("NUMBER", "3.14")])
 
     def test_tokenizes_strings_with_escaped_quote(self):
         tokens = tokenize("'it''s a test'")
@@ -114,7 +115,16 @@ class TestParseSelect(unittest.TestCase):
         self.assertEqual(stmt.where.right, ast.Literal(-3.5))
 
     def test_where_comparison_operators(self):
-        for text, op in [("=", "="), ("<>", "<>"), ("!=", "<>"), ("<", "<"), ("<=", "<="), (">", ">"), (">=", ">=")]:
+        cases = [
+            ("=", "="),
+            ("<>", "<>"),
+            ("!=", "<>"),
+            ("<", "<"),
+            ("<=", "<="),
+            (">", ">"),
+            (">=", ">="),
+        ]
+        for text, op in cases:
             stmt = parse(f"SELECT * FROM t WHERE a {text} 1")
             self.assertEqual(stmt.where.op, op, text)
 

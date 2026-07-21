@@ -27,7 +27,8 @@ class TestWriteAheadLog(unittest.TestCase):
         reader = WriteAheadLog(self.path)
         records = reader.read_all()
         reader.close()
-        self.assertEqual([r.type for r in records], [RecordType.BEGIN, RecordType.OP, RecordType.COMMIT])
+        expected = [RecordType.BEGIN, RecordType.OP, RecordType.COMMIT]
+        self.assertEqual([r.type for r in records], expected)
         self.assertEqual(records[1].payload["kind"], "heap_insert")
         self.assertEqual(records[1].payload["table"], "widgets")
 

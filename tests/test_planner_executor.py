@@ -62,11 +62,14 @@ class PlannerExecutorTestBase(unittest.TestCase):
         self.catalog.create_table("orders", ORDERS_SCHEMA)
 
         loader = self.txn_mgr.begin()
-        heap = HeapFile(self.bpm, first_page_id=self.catalog.get_table("widgets").heap_first_page_id)
+        widgets_first_page = self.catalog.get_table("widgets").heap_first_page_id
+        heap = HeapFile(self.bpm, first_page_id=widgets_first_page)
         from minirel.index.btree import BPlusTree
 
         idx_meta = self.catalog.get_table("widgets").indexes["widgets_id_idx"]
-        tree = BPlusTree(self.bpm, key_type=idx_meta.key_type, root_page_id=idx_meta.root_page_id, unique=True)
+        tree = BPlusTree(
+            self.bpm, key_type=idx_meta.key_type, root_page_id=idx_meta.root_page_id, unique=True
+        )
         for row in WIDGET_ROWS:
             payload = encode_row(list(row), WIDGETS_SCHEMA)
             tup = pack_tuple(loader.txn_id, INFINITY_TXN, payload)
@@ -74,7 +77,8 @@ class PlannerExecutorTestBase(unittest.TestCase):
             tree.insert(row[0], rid)
         self.catalog.update_index_root("widgets", "widgets_id_idx", tree.root_page_id)
 
-        orders_heap = HeapFile(self.bpm, first_page_id=self.catalog.get_table("orders").heap_first_page_id)
+        orders_first_page = self.catalog.get_table("orders").heap_first_page_id
+        orders_heap = HeapFile(self.bpm, first_page_id=orders_first_page)
         for row in [(1, 3, 10), (2, 1, 100), (3, 4, 2)]:
             payload = encode_row(list(row), ORDERS_SCHEMA)
             tup = pack_tuple(loader.txn_id, INFINITY_TXN, payload)
@@ -114,7 +118,8 @@ class TestSeqScanAndFilter(PlannerExecutorTestBase):
         self.assertEqual({r["name"] for r in rows}, {"widget", "gizmo"})
 
     def test_where_and(self):
-        rows = self.run_select("SELECT name FROM widgets WHERE category = 'hardware' AND price < 1.0")
+        sql = "SELECT name FROM widgets WHERE category = 'hardware' AND price < 1.0"
+        rows = self.run_select(sql)
         self.assertEqual({r["name"] for r in rows}, {"bolt", "nail"})
 
     def test_where_or(self):
@@ -142,7 +147,8 @@ class TestIndexScanPushdown(PlannerExecutorTestBase):
 
     def test_index_scan_result_matches_seq_scan_result(self):
         indexed = self.run_select("SELECT * FROM widgets WHERE id = 4")
-        seq = self.run_select("SELECT * FROM widgets WHERE category = 'gadgets' OR category = 'hardware'")
+        seq_sql = "SELECT * FROM widgets WHERE category = 'gadgets' OR category = 'hardware'"
+        seq = self.run_select(seq_sql)
         matching = [r for r in seq if r["id"] == 4]
         self.assertEqual(indexed, matching)
 
@@ -153,9 +159,11 @@ class TestIndexScanPushdown(PlannerExecutorTestBase):
 
 class TestJoin(PlannerExecutorTestBase):
     def test_inner_join_on_equality(self):
-        rows = self.run_select(
-            "SELECT widgets.name, orders.qty FROM orders JOIN widgets ON orders.widget_id = widgets.id"
+        sql = (
+            "SELECT widgets.name, orders.qty FROM orders "
+            "JOIN widgets ON orders.widget_id = widgets.id"
         )
+        rows = self.run_select(sql)
         self.assertEqual(
             {(r["name"], r["qty"]) for r in rows},
             {("widget", 10), ("bolt", 100), ("gizmo", 2)},
@@ -196,7 +204,8 @@ class TestMvccVisibilityThroughExecutor(PlannerExecutorTestBase):
         from minirel.index.btree import BPlusTree
 
         writer = self.txn_mgr.begin()
-        heap = HeapFile(self.bpm, first_page_id=self.catalog.get_table("widgets").heap_first_page_id)
+        widgets_first_page = self.catalog.get_table("widgets").heap_first_page_id
+        heap = HeapFile(self.bpm, first_page_id=widgets_first_page)
         idx_meta = self.catalog.get_table("widgets").indexes["widgets_id_idx"]
         tree = BPlusTree(
             self.bpm, key_type=idx_meta.key_type, root_page_id=idx_meta.root_page_id, unique=True

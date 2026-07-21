@@ -24,7 +24,7 @@ class TestCatalog(unittest.TestCase):
         self._db_tmp.close()
         self._cat_tmp = tempfile.NamedTemporaryFile(delete=False)
         self._cat_tmp.close()
-        os.unlink(self._cat_tmp.name)  # catalog constructor expects "doesn't exist yet" as the empty case
+        os.unlink(self._cat_tmp.name)  # catalog constructor expects "doesn't exist yet"
         self.dm = DiskManager(self._db_tmp.name)
         self.bpm = BufferPoolManager(self.dm, pool_size=16)
 

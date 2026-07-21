@@ -40,7 +40,7 @@ class TestBasicRecovery(WalRecoveryTestBase):
         db.execute("CREATE TABLE widgets (id INT, name TEXT)")
         db.execute("INSERT INTO widgets VALUES (1, 'bolt'), (2, 'nail')")
         db.checkpoint()  # ensure this part is durable regardless of the recovery test below
-        db.execute("INSERT INTO widgets VALUES (3, 'screw')")  # after the checkpoint, in the WAL only
+        db.execute("INSERT INTO widgets VALUES (3, 'screw')")  # after checkpoint, WAL only
         self._crash(db)
 
         recovered = self._reopen()

@@ -149,3 +149,77 @@ an embarrassment to hide:
 - **The SQL lexer had no unary minus** -- `WHERE tag = -1` failed to
   tokenize at all. Found while writing the benchmark scripts, not the
   unit tests, which is its own small lesson about coverage.
+
+## Benchmarks
+
+`benchmarks/bench_point_lookup.py` -- B+-tree index scan vs. full
+sequential scan, at increasing table sizes (run with `--rows` for
+larger tables; growth, not the absolute numbers on any one machine, is
+the point):
+
+```
+    rows | tree height |  index scan (us) |  seq scan (us) |  speedup
+----------------------------------------------------------------------
+    1000 |           2 |            622.2 |         3552.9 |     5.7x
+    5000 |           2 |            575.4 |        17394.4 |    30.2x
+   10000 |           2 |            728.2 |        35349.8 |    48.5x
+```
+
+The tree stays 2 levels deep as the table grows 10x while the
+sequential scan's cost grows linearly with it -- exactly the property a
+B+-tree's high fanout (hundreds of keys per 4KB page) is supposed to
+give you.
+
+`benchmarks/bench_throughput.py` -- batched vs. one-row-per-transaction
+inserts (isolating the WAL's per-commit `fsync` cost), full-table-scan
+throughput, and indexed point-query throughput.
+
+## Running it
+
+```bash
+pip install -e ".[dev]"          # dev extras: ruff, black
+python -m unittest discover -s tests -v
+python benchmarks/bench_point_lookup.py
+python benchmarks/bench_throughput.py
+minirel path/to/some.db          # interactive SQL REPL
+```
+
+Or from Python:
+
+```python
+from minirel import Database
+
+db = Database("example.db")
+db.execute("CREATE TABLE widgets (id INT, name TEXT)")
+db.execute("INSERT INTO widgets VALUES (1, 'bolt')")
+result = db.execute("SELECT * FROM widgets")
+print(result.rows)  # [{'id': 1, 'name': 'bolt'}]
+
+# Explicit multi-statement transactions:
+txn = db.begin()
+db.execute("UPDATE widgets SET name = 'big bolt' WHERE id = 1", txn=txn)
+txn.commit()  # or txn.abort()
+
+db.close()
+```
+
+## Project layout
+
+```
+src/minirel/
+  storage/          disk_manager.py, buffer_pool.py, heap_file.py, page.py
+  index/            btree.py
+  sql/              lexer.py, ast.py, parser.py
+  wal.py            write-ahead log
+  transaction.py    MVCC transaction manager
+  catalog.py        table/index metadata
+  types.py          column types, row (de)serialization, MVCC tuple header
+  expr.py           WHERE/ON/SELECT-item expression evaluation
+  executor.py       Volcano-model query operators
+  planner.py        AST -> operator tree, with index predicate pushdown
+  database.py       top-level Database class (SQL entry point)
+  repl.py           interactive shell (`minirel` console script)
+tests/              one file per component, plus end-to-end tests and
+                    the WAL crash-recovery integration tests
+benchmarks/         bench_point_lookup.py, bench_throughput.py
+```

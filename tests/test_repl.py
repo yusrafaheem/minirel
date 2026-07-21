@@ -56,6 +56,12 @@ class TestRepl(unittest.TestCase):
         output = self._run(script)
         self.assertIn("DELETE 1", output)
 
+    def test_update_reports_row_count(self):
+        script = "CREATE TABLE t (id INT, price FLOAT);\nINSERT INTO t VALUES (1, 1.0), (2, 2.0);\n"
+        script += "UPDATE t SET price = 9.99 WHERE id = 1;\n.exit\n"
+        output = self._run(script)
+        self.assertIn("UPDATE 1", output)
+
     def test_empty_result_set_message(self):
         output = self._run("CREATE TABLE t (id INT);\nSELECT * FROM t WHERE id = 1;\n.exit\n")
         self.assertIn("(0 rows)", output)

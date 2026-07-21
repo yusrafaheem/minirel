@@ -120,6 +120,12 @@ class BufferPoolManager:
         return page_id, frame.data
 
     def unpin_page(self, page_id: int, dirty: bool = False) -> None:
+        """Release one hold on `page_id`. `dirty` is sticky (once True for a
+        frame, it stays True until the next flush) so an earlier caller's
+        write is never lost just because a later unpin passes dirty=False.
+        Only once pin_count drops to zero does the frame become eligible
+        for LRU eviction.
+        """
         frame_idx = self._page_table.get(page_id)
         if frame_idx is None:
             return
